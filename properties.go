@@ -269,10 +269,22 @@ func (m Map) SubTree(rootKey string) Map {
 // The values in the Map may contains other markers, they are evaluated
 // recursively up to 10 times.
 func (m Map) ExpandPropsInString(str string) string {
+
+	// Regexp to match file path
+	re := regexp.MustCompile("\\$(.+?)(/|\\\\)(.+?) ")
 	for i := 0; i < 10; i++ {
 		newStr := str
 		for key, value := range m {
 			newStr = strings.Replace(newStr, "{"+key+"}", value, -1)
+		}
+		fileString := re.FindString(newStr)
+		if fileString != "" {
+			filepath := strings.TrimSpace(strings.Trim(fileString, "$"))
+			content, err := ioutil.ReadFile(filepath)
+			if err == nil {
+				str := strings.Replace(string(content), "\n", " ", -1)
+				newStr = strings.Replace(newStr, fileString, str, -1)
+			}
 		}
 		if str == newStr {
 			break
